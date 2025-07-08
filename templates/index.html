@@ -37,6 +37,10 @@
       messages.scrollTop = messages.scrollHeight;
     });
 
+    socket.on('user_count', count => {
+      document.querySelector('#count').textContent = count;
+    });
+
     form.addEventListener('submit', (e) => {
       e.preventDefault();
       if (input.value) {
