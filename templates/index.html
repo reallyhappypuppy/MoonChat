@@ -1,38 +1,49 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>MoonChat</title>
-  <style>
-    body { background-color: #121212; color: white; font-family: sans-serif; }
-    #user-count { margin-bottom: 10px; }
-  </style>
-  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+  <title>Dark Chat</title>
+  <link rel="stylesheet" href="/static/style.css" />
+  <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
 </head>
 <body>
-  <h1>🌙 MoonChat</h1>
-  <div id="user-count">👥 현재 접속자: <span id="count">0</span>명</div>
-  <ul id="messages"></ul>
-  <input id="input" autocomplete="off" placeholder="메시지를 입력하세요..." /><button onclick="sendMessage()">보내기</button>
+  <div class="chat-container">
+    <h2>🌙 Moon Chat</h2>
+    <div id="user-count">👥 현재 접속자: <span id="count">0</span>명</div>
+    <input id="nickname" placeholder="닉네임 입력" />
+    <ul id="messages"></ul>
+    <form id="form">
+      <input id="input" autocomplete="off" placeholder="메시지 입력" /><button>전송</button>
+    </form>
+  </div>
 
   <script>
     const socket = io();
+    const form = document.getElementById('form');
+    const input = document.getElementById('input');
+    const messages = document.getElementById('messages');
+    const nicknameInput = document.getElementById('nickname');
 
-    socket.on('message', msg => {
-      const li = document.createElement('li');
-      li.textContent = msg;
-      document.querySelector('#messages').appendChild(li);
+    nicknameInput.addEventListener('change', () => {
+      const nick = nicknameInput.value.trim();
+      if (nick) {
+        socket.emit('set_nickname', nick);
+      }
     });
 
-    socket.on('user_count', count => {
-      document.querySelector('#count').textContent = count;
+    socket.on('message', (msg) => {
+      const item = document.createElement('li');
+      item.textContent = msg;
+      messages.appendChild(item);
+      messages.scrollTop = messages.scrollHeight;
     });
 
-    function sendMessage() {
-      const input = document.querySelector('#input');
-      socket.emit('message', input.value);
-      input.value = '';
-    }
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (input.value) {
+        socket.send(input.value);
+        input.value = '';
+      }
+    });
   </script>
 </body>
 </html>
