@@ -26,6 +26,7 @@ def handle_connect():
     print(f'User connected: {user_id}')
     emit('user_count', len(online_users), broadcast=True)
     emit('chat_history', chat_history)
+    socketio.emit('chat_history', chat_history, room=request.sid)
     broadcast_user_list()
 
 
