@@ -2,13 +2,20 @@ from flask import Flask, render_template, request
 from flask_socketio import SocketIO, send, emit
 from uuid import uuid4
 import os
+import json
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(app)
 online_users = set()
 users = {}
-chat_history = []
+LOG_FILE = 'chat_log.json'
+
+if os.path.exists(LOG_FILE):
+    with open(LOG_FILE, 'r', encoding='utf-8') as f:
+        chat_history = json.load(f)
+else:
+    chat_history = []
 
 def broadcast_user_list():
     nicknames = [user['nickname'] for user in users.values()]
@@ -47,7 +54,8 @@ def handle_message(msg):
         print(full_msg)
         send(full_msg, broadcast=True)
         chat_history.append(full_msg)
-
+        with open(LOG_FILE, 'w', encoding='utf-8') as f:
+            json.dump(chat_history, f, ensure_ascii=False, indent=2)
 
 @socketio.on('disconnect')
 def handle_disconnect():
