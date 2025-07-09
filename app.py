@@ -14,6 +14,10 @@ def broadcast_user_list():
     nicknames = [user['nickname'] for user in users.values()]
     emit('user_list', nicknames, broadcast=True)
 
+@socketio.on('request_chat_history')
+def send_history():
+    emit('chat_history', chat_history)
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -25,7 +29,6 @@ def handle_connect():
     online_users.add(request.sid)
     print(f'User connected: {user_id}')
     emit('user_count', len(online_users), broadcast=True)
-    emit('chat_history', chat_history)
     socketio.emit('chat_history', chat_history, room=request.sid)
     broadcast_user_list()
 
@@ -43,10 +46,8 @@ def handle_message(msg):
         full_msg = f"{nickname}: {msg}"
         print(full_msg)
         send(full_msg, broadcast=True)
+        chat_history.append(full_msg)
 
-@socketio.on('request_chat_history')
-def send_history():
-    emit('chat_history', chat_history)
 
 @socketio.on('disconnect')
 def handle_disconnect():
