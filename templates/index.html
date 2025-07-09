@@ -30,15 +30,40 @@
       }
     });
 
+    if (Notification.permission !== "granted") {
+    Notification.requestPermission();
+    }
+
     socket.on('message', (msg) => {
       const item = document.createElement('li');
       item.textContent = msg;
       messages.appendChild(item);
       messages.scrollTop = messages.scrollHeight;
+      addMessageToChat(msg);
+      if (document.hidden) {
+        new Notification("📨 새 메시지", {
+            body: msg,
+        });
+        }
     });
 
     socket.on('user_count', count => {
       document.querySelector('#count').textContent = count;
+    });
+
+    socket.emit('request_chat_history')
+    socket.on('chat_history', function(history) {
+        history.forEach(msg => addMessageToChat(msg));
+    });
+
+    socket.on('user_list', function(userList) {
+        const userListElement = document.getElementById('user-list');
+        userListElement.innerHTML = '';
+        userList.forEach(nick => {
+            const li = document.createElement('li');
+            li.textContent = nick;
+            userListElement.appendChild(li);
+        });
     });
 
     form.addEventListener('submit', (e) => {

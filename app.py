@@ -8,6 +8,11 @@ app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(app)
 online_users = set()
 users = {}  # Maps session ID to user info
+chat_history = []
+
+def broadcast_user_list():
+    nicknames = [user['nickname'] for user in users.values()]
+    emit('user_list', nicknames, broadcast=True)
 
 @app.route('/')
 def index():
@@ -20,11 +25,13 @@ def handle_connect():
     online_users.add(request.sid)
     print(f'User connected: {user_id}')
     emit('user_count', len(online_users), broadcast=True)
+    broadcast_user_list()
 
 @socketio.on('set_nickname')
 def set_nickname(nick):
     if request.sid in users:
         users[request.sid]['nickname'] = nick
+        broadcast_user_list()
 
 @socketio.on('message')
 def handle_message(msg):
@@ -34,6 +41,10 @@ def handle_message(msg):
         print(full_msg)
         send(full_msg, broadcast=True)
 
+@socketio.on('request_chat_history')
+def send_history():
+    emit('chat_history', chat_history)
+
 @socketio.on('disconnect')
 def handle_disconnect():
     if request.sid in users:
@@ -41,6 +52,7 @@ def handle_disconnect():
         del users[request.sid]
     online_users.discard(request.sid)
     emit('user_count', len(online_users), broadcast=True)
+    broadcast_user_list()
 
 if __name__ == '__main__':
     import eventlet
