@@ -13,6 +13,8 @@
     <ul id="messages"></ul>
     <form id="form">
       <input id="input" autocomplete="off" placeholder="메시지 입력" /><button>전송</button>
+    <h3>접속자 목록</h3>
+    <ul id="user-list"></ul>
     </form>
   </div>
 
@@ -23,16 +25,16 @@
     const messages = document.getElementById('messages');
     const nicknameInput = document.getElementById('nickname');
 
+    if (Notification.permission !== "granted") {
+        Notification.requestPermission();
+    }
+
     nicknameInput.addEventListener('change', () => {
       const nick = nicknameInput.value.trim();
       if (nick) {
         socket.emit('set_nickname', nick);
       }
     });
-
-    if (Notification.permission !== "granted") {
-    Notification.requestPermission();
-    }
 
     socket.on('message', (msg) => {
       const item = document.createElement('li');
@@ -73,6 +75,15 @@
         input.value = '';
       }
     });
+
+    function addMessageToChat(msg) {
+            const chat = document.getElementById('chat');
+            const div = document.createElement('div');
+            div.textContent = msg;
+            chat.appendChild(div);
+            chat.scrollTop = chat.scrollHeight;
+        }
+
   </script>
 </body>
 </html>

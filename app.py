@@ -7,7 +7,7 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(app)
 online_users = set()
-users = {}  # Maps session ID to user info
+users = {}
 chat_history = []
 
 def broadcast_user_list():
@@ -25,7 +25,9 @@ def handle_connect():
     online_users.add(request.sid)
     print(f'User connected: {user_id}')
     emit('user_count', len(online_users), broadcast=True)
+    emit('chat_history', chat_history)
     broadcast_user_list()
+
 
 @socketio.on('set_nickname')
 def set_nickname(nick):
