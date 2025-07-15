@@ -2,3 +2,9 @@ flask
 flask-socketio
 eventlet
 dotenv
+uuid
+os
+json
+html
+jwt
+flask_limiter
