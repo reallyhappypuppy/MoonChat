@@ -1,11 +1,29 @@
 from flask import Flask, render_template, request
 from flask_socketio import SocketIO, send, emit
 from uuid import uuid4
+from dotenv import load_dotenv
 import os
 import json
+import html
+import jwt
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+
+# Load environment variables
+load_dotenv()
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'secret!'
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'fallback_secret')
+app.debug = False
+
+# Rate limiter
+# 기존 코드 (오류 발생)
+# limiter = Limiter(app, key_func=get_remote_address)
+
+# 수정된 코드
+limiter = Limiter(key_func=get_remote_address)
+limiter.init_app(app)
+
 socketio = SocketIO(app)
 online_users = set()
 users = {}
@@ -26,30 +44,39 @@ def send_history():
     emit('chat_history', chat_history)
 
 @app.route('/')
+@limiter.limit("10 per minute")
 def index():
     return render_template('index.html')
 
 @socketio.on('connect')
-def handle_connect():
-    user_id = str(uuid4())
-    users[request.sid] = {'id': user_id, 'nickname': '익명'}
-    online_users.add(request.sid)
-    print(f'User connected: {user_id}')
-    emit('user_count', len(online_users), broadcast=True)
-    socketio.emit('chat_history', chat_history, room=request.sid)
-    broadcast_user_list()
-
+def handle_connect(auth):
+    token = auth.get("token") if auth else None
+    try:
+        decoded = jwt.decode(token, os.getenv('JWT_SECRET', 'default_jwt_secret'), algorithms=["HS256"])
+        users[request.sid] = {
+            'id': decoded.get('user_id', str(uuid4())),
+            'nickname': decoded.get('nickname', '익명')
+        }
+        online_users.add(request.sid)
+        emit('user_count', len(online_users), broadcast=True)
+        socketio.emit('chat_history', chat_history, room=request.sid)
+        broadcast_user_list()
+    except Exception as e:
+        print("Invalid token:", e)
+        return False  # Reject connection
 
 @socketio.on('set_nickname')
 def set_nickname(nick):
     if request.sid in users:
-        users[request.sid]['nickname'] = nick
+        users[request.sid]['nickname'] = html.escape(nick)
         broadcast_user_list()
 
 @socketio.on('message')
+@limiter.limit("2 per second")
 def handle_message(msg):
     if request.sid in users:
-        nickname = users[request.sid]['nickname']
+        nickname = html.escape(users[request.sid]['nickname'])
+        msg = html.escape(msg)
         full_msg = f"{nickname}: {msg}"
         print(full_msg)
         send(full_msg, broadcast=True)
