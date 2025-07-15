@@ -50,20 +50,27 @@ def index():
 
 @socketio.on('connect')
 def handle_connect(auth):
-    token = auth.get("token") if auth else None
-    try:
-        decoded = jwt.decode(token, os.getenv('JWT_SECRET', 'default_jwt_secret'), algorithms=["HS256"])
-        users[request.sid] = {
-            'id': decoded.get('user_id', str(uuid4())),
-            'nickname': decoded.get('nickname', '익명')
-        }
-        online_users.add(request.sid)
-        emit('user_count', len(online_users), broadcast=True)
-        socketio.emit('chat_history', chat_history, room=request.sid)
-        broadcast_user_list()
-    except Exception as e:
-        print("Invalid token:", e)
-        return False  # Reject connection
+#    token = auth.get("token") if auth else None
+#    try:
+#        decoded = jwt.decode(token, os.getenv('JWT_SECRET', 'default_jwt_secret'), algorithms=["HS256"])
+#        users[request.sid] = {
+#            'id': decoded.get('user_id', str(uuid4())),
+#            'nickname': decoded.get('nickname', '익명')
+#        }
+#        online_users.add(request.sid)
+#        emit('user_count', len(online_users), broadcast=True)
+#        socketio.emit('chat_history', chat_history, room=request.sid)
+#        broadcast_user_list()
+#    except Exception as e:
+#        print("Invalid token:", e)
+#        return False  # Reject connection
+    user_id = str(uuid4())
+    users[request.sid] = {'id': user_id, 'nickname': '익명'}
+    online_users.add(request.sid)
+    emit('user_count', len(online_users), broadcast=True)
+    socketio.emit('chat_history', chat_history, room=request.sid)
+    broadcast_user_list()
+
 
 @socketio.on('set_nickname')
 def set_nickname(nick):
